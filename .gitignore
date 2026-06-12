@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Generated files
+*.o
+*.ko
+*.obj
+*.elf
+*.a
+*.lib
+*.so.*
+*.dylib
+
+# Kernel build outputs
+vmlinux
+System.map
+Module.symvers
+modules.builtin
+modules.builtin.modinfo
+*.mod.c
+*.mod
+*.symvers
+*.order
+
+# Build directories
+out/
+build/
+tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scripts outputs
+ksu_cleanup_backup_*/
+*.orig
+*.rej
