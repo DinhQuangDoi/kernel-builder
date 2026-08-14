@@ -102,6 +102,17 @@ kernel-builder/
 - Trước khi commit: `find . -name "*.rej" -o -name "*.orig"` (ngoài kernel-builder) -> xoá.
 - Hooks apply lỗi 1 hunk (vd `fs/namespace.c`) thì sửa tay, đừng commit `.rej`/`.orig`.
 
+### 8. Workflow CI dùng ccache để rebuild nhanh (26p → ~9p)
+- Workflow tham chiếu: `JackA1ltman/NonGKI_Kernel_Build_2nd` (op8: `build-oneplus-8-series-oos13-a13-xtd.yml`).
+- Cách tối ưu đã áp dụng:
+  1. Cài `ccache` trong "Install dependencies".
+  2. Env: `CCACHE_COMPILERCHECK`, `CCACHE_NOHASHDIR=true`, `CCACHE_HARDLINK=true`.
+  3. Trước build: `hendrikmuhs/ccache-action@v1.2.22` (key `build-kernel-${{DEVICE_CODENAME}}-${{TOOLCHAIN_TYPE}}`, `max-size: 2G`) — persist cache giữa các run.
+  4. Build dùng `CC="ccache clang"` (bọc compiler) + `-j$(nproc --all)`.
+  5. Đọc hiệu quả: step "ccache stats" (Hits/Misses/Hit rate).
+- Lần build đầu tiên vẫn ~26p (chưa có cache); từ lần sau gần như full cache-hit, chỉ compile phần thay đổi (~9p).
+- Khi `kernelsu` source thay đổi, ccache-key đổi theo `DEVICE_CODENAME`+`TOOLCHAIN_TYPE` mới để không dùng cache cũ sai.
+
 ---
 
 ## Sử dụng

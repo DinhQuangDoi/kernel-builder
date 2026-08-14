@@ -1,0 +1,22 @@
+device:
+  codename: "op8"
+  arch: "arm64"
+  defconfig: "op8_defconfig"
+
+toolchain:
+  type: "clang"
+  clang_version: "17.0.6"
+  gcc_prebuilt: "none"
+
+kernel:
+  version: "4.19"
+  anykernel: true
+
+ksu:
+  integrated: true
+
+upload:
+  vmlinux: false
+
+github:
+  branch: "blu_spark-14-custom"

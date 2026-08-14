@@ -289,17 +289,32 @@ def generate_workflow(config: Dict[str, Any]) -> str:
 """
 
     # ---- Build steps -----------------------------------------------------------
+    ccache_step = f"""    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2.22
+      with:
+        key: build-kernel-${{{{ env.DEVICE_CODENAME }}}}-${{{{ env.TOOLCHAIN_TYPE }}}}
+        max-size: 2G
+
+"""
     if tc_type == 'gcc':
         build_step = f"""        make O=out ARCH={arch} CROSS_COMPILE={cross_compile} {defconfig}
 
-        make O=out -j$(nproc) ARCH={arch} CROSS_COMPILE={cross_compile}
+        make O=out -j$(nproc --all) ARCH={arch} CROSS_COMPILE={cross_compile}
 """
     else:
         build_step = f"""        make O=out ARCH={arch} \\
-          CC=clang CLANG_TRIPLE={clang_triple} CROSS_COMPILE={cross_compile} {defconfig}
+          CC="ccache clang" CLANG_TRIPLE={clang_triple} CROSS_COMPILE={cross_compile} {defconfig}
 
-        make O=out -j$(nproc) ARCH={arch} \\
-          CC=clang CLANG_TRIPLE={clang_triple} CROSS_COMPILE={cross_compile}
+        make O=out -j$(nproc --all) ARCH={arch} \\
+          CC="ccache clang" CLANG_TRIPLE={clang_triple} CROSS_COMPILE={cross_compile}
+"""
+
+    ccache_stats_step = f"""    - name: ccache stats
+      run: |
+        ccache -s
+        echo "### Ccache stats" >> $GITHUB_STEP_SUMMARY
+        ccache -s | grep -E "Hits|Misses|Cache size|Hit rate" | sed 's/^/- \|/' >> $GITHUB_STEP_SUMMARY
+
 """
 
     # ---- AnyKernel3 steps ------------------------------------------------------
@@ -442,6 +457,10 @@ env:
   TOOLCHAIN_TYPE: {tc_type}
   KERNEL_VERSION: {kernel_version}
   KERNEL_OUT: out
+  # ccache tweaks for fast rebuilds
+  CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+  CCACHE_NOHASHDIR: "true"
+  CCACHE_HARDLINK: "true"
 
 jobs:
   build:
@@ -460,6 +479,7 @@ jobs:
           build-essential \\
           bc \\
           binutils \\
+          ccache \\
           gcc-aarch64-linux-gnu \\
           git \\
           curl \\
@@ -475,9 +495,9 @@ jobs:
         cd toolchain
 {toolchain_step}
 
-{anykernel_download_step}{ksu_check_step}    - name: Build kernel
+{anykernel_download_step}{ksu_check_step}{ccache_step}    - name: Build kernel
       run: |
-{build_step}
+{build_step}{ccache_stats_step}
 {('    - name: Package AnyKernel3\n      run: |\n' + package_step) if package_step else ''}
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
