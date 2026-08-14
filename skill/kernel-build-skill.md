@@ -53,6 +53,57 @@ kernel-builder/
 
 ---
 
+## ⚠️ Nhắc nhở bắt buộc cho Agent
+
+> Các quy tắc này rất quan trọng để tránh hỏng repo kernel. Đọc kỹ trước khi commit.
+
+### 1. KHÔNG bao giờ commit `kernel-builder/` vào kernel repo
+- `kernel-builder/` là một git repo **riêng** (`https://github.com/DinhQuangDoi/kernel-builder.git`).
+- Không `git add kernel-builder/`, không `git add -A .` (sẽ vô tình thêm nó như embedded repo / gitlink `160000`).
+- Nếu lỡ staged, bỏ: `git rm -r --cached -f kernel-builder`.
+- Tương tự **không commit** các thư mục/repo phụ lạ (vd `gtest/` — untracked, không liên quan).
+
+### 2. Stage có chọn lọc, KHÔNG dùng `git add -A`
+- Chỉ `git add` đích danh các file integrate:
+  - `arch/arm64/configs/op8_defconfig`
+  - `drivers/Kconfig`, `drivers/Makefile`, `drivers/input/input.c`
+  - `fs/` (susfs.c, exec.c, namei.c, namespace.c, ...)
+  - `include/linux/susfs.h`, `include/linux/susfs_def.h`, `include/linux/seccomp.h`
+  - `kernel/`, `mm/`, `security/selinux/`
+  - `KernelSU` (gitlink `160000`), `drivers/kernelsu` (symlink `120000`), `.gitmodules`, `fs/susfs.c`
+  - `.github/workflows/*.yml`
+- Sau stage, chạy `git diff --cached --name-only` và kiểm tra **không** có `kernel-builder/` hay `gtest/`.
+
+### 3. File `.github/`, `.gitmodules`, `.*` bị `.gitignore` chặn
+- `.gitignore` có rule `.*` -> `.github/` và `.gitmodules` **không add thường được**.
+- Phải dùng `git add -f .github/workflows/kernel-build.yml` và `git add -f .gitmodules`.
+- KHÔNG sửa `.gitignore` để bypass; dùng `-f` (mẫu nhánh cũ dùng force add).
+
+### 4. Đăng ký submodule KernelSU trong `.gitmodules`
+- Thiếu `.gitmodules` thì GitHub Actions (`submodules: recursive`) không fetch được ReSukiSU.
+- Nội dung:
+  ```
+  [submodule "KernelSU"]
+  	path = KernelSU
+  	url = https://github.com/ReSukiSU/ReSukiSU
+  ```
+
+### 5. Module signing phải TẮT cho driver `.ko` không ký
+- Đảm bảo `op8_defconfig` có `# CONFIG_MODULE_SIG is not set` (đã bỏ `CONFIG_MODULE_SIG_FORCE`, `_ALL`, `_KEY`).
+- Nếu đang còn `CONFIG_MODULE_SIG_FORCE=y` -> driver không ký sẽ không load được.
+- `CONFIG_MODVERSIONS=y` là chuẩn; chỉ tắt khi `insmod` báo lỗi symbol/CRC không khớp.
+
+### 6. Kiểm tra submodule trước khi commit
+- `git ls-files -s | grep -E "160000|120000"` để xác nhận:
+  - `KernelSU` = mode `160000` (gitlink)
+  - `drivers/kernelsu` = mode `120000` (symlink)
+
+### 7. Đảm bảo không còn file patch dư thừa
+- Trước khi commit: `find . -name "*.rej" -o -name "*.orig"` (ngoài kernel-builder) -> xoá.
+- Hooks apply lỗi 1 hunk (vd `fs/namespace.c`) thì sửa tay, đừng commit `.rej`/`.orig`.
+
+---
+
 ## Sử dụng
 
 ### Cách 1: Chạy từng phase riêng biệt
