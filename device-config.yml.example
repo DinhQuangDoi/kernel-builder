@@ -1,0 +1,40 @@
+# Kernel Builder - Device Configuration Example
+# Copy to device-config.yml and adjust for your kernel source.
+#
+# All values are optional; unset keys fall back to auto-detection.
+
+device:
+  codename: "sweetin"                # Device codename (shown in build summary)
+  arch: "arm64"                      # Target architecture (auto-detected if omitted)
+  defconfig: "vendor/sweetin_defconfig"  # Defconfig target name (not a path)
+
+toolchain:
+  # "clang" (default) or "gcc"
+  type: "clang"
+  # Official LLVM release version (proton-clang is no longer available)
+  clang_version: "17.0.6"
+  # GCC toolchain used alongside clang for hybrid builds:
+  #   "none" (default) -> system aarch64-linux-gnu from apt
+  #   "arm"            -> ARM GNU prebuilt toolchain
+  gcc_prebuilt: "none"
+  gcc_version: "13.2.rel1"           # Only used when gcc_prebuilt: "arm"
+
+kernel:
+  version: "4.19"                    # Kernel major.minor version
+  #patchlevel: "325"                 # Optional: auto-detected from Makefile if omitted
+  #full_version: "4.19.325"          # Optional: exact string used in build summary
+  anykernel: true                    # Create an AnyKernel3 flashable zip (default true)
+  #anykernel_url: "https://github.com/custom/AnyKernel3.git"  # Custom AK3 repo (default osm0sis)
+  #anykernel_in_tree: false          # Use an AnyKernel3 dir already inside the kernel tree
+
+ksu:
+  integrated: true                   # Show a KSU integration check step in the workflow
+
+upload:
+  vmlinux: false                     # Upload out/vmlinux (~200MB with DEBUG_INFO). Default false!
+
+links:
+  manager_url: "https://nightly.link/ReSukiSU/ReSukiSU/workflows/build-manager/main"  # Hiển thị trong Build Summary
+
+github:
+  branch: "main"                     # (Reserved for future use)

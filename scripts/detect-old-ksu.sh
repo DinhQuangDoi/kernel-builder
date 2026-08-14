@@ -301,21 +301,12 @@ main() {
     echo "Kernel source detected: $(pwd)"
     echo ""
     
-    # Run all scans
-    scan_kernelsu_dir
-    local ksu_dir_result=$?
-    
-    scan_susfs_files
-    local susfs_result=$?
-    
-    scan_files_for_old_hooks
-    local hooks_result=$?
-    
-    scan_git_history_for_ksu
-    local git_result=$?
-    
-    scan_config_ksu
-    local config_result=$?
+    # Run all scans (results are printed by each scan, then re-verified in summary)
+    scan_kernelsu_dir || true
+    scan_susfs_files || true
+    scan_files_for_old_hooks || true
+    scan_git_history_for_ksu || true
+    check_config_ksu || true
     
     # Generate summary
     generate_summary

@@ -409,28 +409,34 @@ main() {
     local total_passed=0
     local total_checks=0
     
-    # Run all checks
-    local selinux_passed=$(run_selinux_checks)
+    # Run all checks (each function prints results and returns the passed count)
+    local selinux_passed=0
+    run_selinux_checks || selinux_passed=$?
     total_passed=$((total_passed + selinux_passed))
     total_checks=$((total_checks + 5))
     
-    local samsung_passed=$(run_samsung_checks)
+    local samsung_passed=0
+    run_samsung_checks || samsung_passed=$?
     total_passed=$((total_passed + samsung_passed))
     total_checks=$((total_checks + 2))
     
-    local huawei_passed=$(run_huawei_checks)
+    local huawei_passed=0
+    run_huawei_checks || huawei_passed=$?
     total_passed=$((total_passed + huawei_passed))
     total_checks=$((total_checks + 1))
     
-    local feature_passed=$(run_kernel_feature_checks)
+    local feature_passed=0
+    run_kernel_feature_checks || feature_passed=$?
     total_passed=$((total_passed + feature_passed))
     total_checks=$((total_checks + 9))
     
-    local android_passed=$(run_android_checks)
+    local android_passed=0
+    run_android_checks || android_passed=$?
     total_passed=$((total_passed + android_passed))
     total_checks=$((total_checks + 3))
     
-    local header_passed=$(run_header_checks)
+    local header_passed=0
+    run_header_checks || header_passed=$?
     total_passed=$((total_passed + header_passed))
     total_checks=$((total_checks + 3))
     

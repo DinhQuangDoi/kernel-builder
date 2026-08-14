@@ -110,6 +110,10 @@ bash susfs_inline.sh
 #### Phase 4: Generate CI Workflow
 
 ```bash
+# Interactive (khuyến nghị sau khi integrate xong): hỏi build local hay GitHub Actions,
+# kiểm tra AK3 trong kernel tree, hỏi dùng AK3 có sẵn hay link AK3 khác
+python3 ./kernel-builder/scripts/generate-workflow.py --interactive
+
 # Generate workflow từ config
 python3 ./kernel-builder/scripts/generate-workflow.py --config device-config.yml
 
@@ -117,12 +121,18 @@ python3 ./kernel-builder/scripts/generate-workflow.py --config device-config.yml
 python3 ./kernel-builder/scripts/generate-workflow.py --detect
 ```
 
-### Cách 2: Interactive Mode (sẽ được thêm)
-
-```bash
-# Chạy interactive workflow
-./kernel-builder/scripts/run-interactive.sh
-```
+Interactive mode flow:
+1. Kiểm tra đã integrate ReSukiSU chưa (`drivers/kernelsu`) — chưa thì cảnh báo
+2. Hiển thị các **CONFIG_KSU\*** đang bật trong defconfig
+3. Hỏi build **local** hay **GitHub Actions workflow**
+   - Local → in sẵn lệnh build (out-of-tree `O=out`)
+4. GitHub Actions → hỏi AnyKernel3:
+   - Có sẵn AK3 trong kernel tree → hỏi dùng nó hay AK3 khác
+   - Không có sẵn → hỏi dùng mặc định osm0sis hay nhập git URL
+5. Workflow tạo ra có **Build Summary**: list CONFIG_KSU\* enabled (từ `out/.config`)
+   + link tải ReSukiSU Manager
+6. **GitHub CLI (`gh`)**: generator tự kiểm tra `gh auth status`, hỏi đăng nhập
+   nếu chưa, rồi hỏi commit+push workflow và kick+theo dõi build (`gh run watch`)
 
 ---
 
@@ -278,29 +288,50 @@ Verify symbols giữa `ksud.ko` và `vmlinux`.
 # device-config.yml
 device:
   codename: "sweetin"
-  defconfig: "arch/arm64/configs/vendor/sweetin_defconfig"
+  defconfig: "vendor/sweetin_defconfig"
   arch: "arm64"
 
 toolchain:
   type: "clang"
-  clang_prebuilt: "proton-clang@20240901"
+  clang_version: "17.0.6"
   gcc_prebuilt: "none"
 
 kernel:
   version: "4.19"
   anykernel: true
+  #anykernel_url: "https://github.com/custom/AnyKernel3.git"  # Custom AK3 repo
+  #anykernel_in_tree: false  # Use an AK3 dir already in the kernel tree
 
 ksu:
   integrated: true
-  version: "latest"
+
+upload:
+  vmlinux: false           # Upload out/vmlinux? Mặc định FALSE (~200MB với DEBUG_INFO)
+
+links:
+  manager_url: "https://nightly.link/ReSukiSU/ReSukiSU/workflows/build-manager/main"
 
 github:
   branch: "main"
 ```
 
+> **Lưu ý:** Proton Clang đã ngừng phát hành. Mặc định dùng LLVM/Clang chính thức
+> (`clang_version`), build out-of-tree qua `O=out` (tránh xung đột với
+> `KBUILD_OUTPUT` hardcode trong kernel Makefile). Mọi step đều tự xử lý khi
+> thiếu toolchain/AnyKernel3.
+>
+> **Lưu ý upload size:** `out/vmlinux` KHÔNG được upload mặc định (kernel
+> `CONFIG_DEBUG_INFO=y` cho vmlinux ~200MB). Bật qua `upload.vmlinux: true`.
+>
+> **Build Summary:** sau khi workflow xong sẽ hiển thị các `CONFIG_KSU*` được bật
+> (đọc từ `out/.config`) và link tải ReSukiSU Manager.
+
 ### Generate Command
 
 ```bash
+# Interactive: hỏi build local hay GitHub Actions, AK3 có sẵn hay link khác
+python3 scripts/generate-workflow.py --interactive
+
 # Từ config file
 python3 scripts/generate-workflow.py --config device-config.yml
 
@@ -376,4 +407,4 @@ patch -p1 --force < susfs_patch.patch
 - [ReSukiSU GitHub](https://github.com/ReSukiSU/ReSukiSU)
 - [KernelSU Documentation](https://kernelsu.org/)
 - [AnyKernel3](https://github.com/osm0sis/AnyKernel3)
-- [Proton Clang](https://github.com/kdrag0n/proton-clang)
+- [LLVM/Clang Releases](https://github.com/llvm/llvm-project/releases)

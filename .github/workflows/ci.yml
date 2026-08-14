@@ -1,0 +1,61 @@
+name: Toolkit Self-Check
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    name: Syntax & Generator Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Shell syntax check
+      run: |
+        set -e
+        for script in scripts/*.sh; do
+          bash -n "$script"
+          echo "OK: $script"
+        done
+
+    - name: Python syntax check
+      run: |
+        set -e
+        python3 -m py_compile scripts/*.py
+
+    - name: Generator smoke test (auto-detect)
+      run: |
+        set -e
+        cd scripts
+        python3 generate-workflow.py --detect -o /tmp/kernel-build.yml
+        python3 -c "import yaml; d=yaml.safe_load(open('/tmp/kernel-build.yml')); assert 'jobs' in d and 'build' in d['jobs']; print('Generated workflow is valid YAML')"
+
+    - name: Generator smoke test (example config)
+      run: |
+        set -e
+        python3 scripts/generate-workflow.py -c device-config.yml.example -o /tmp/kernel-build-2.yml
+        python3 -c "import yaml; d=yaml.safe_load(open('/tmp/kernel-build-2.yml')); assert 'jobs' in d and 'build' in d['jobs']; print('Example config workflow is valid YAML')"
+
+    - name: Generator smoke test (AK3 url/in-tree/upload options)
+      run: |
+        set -e
+        python3 -c "open('/tmp/ak3-options.yml','w').write('''device:\n  codename: optest\n  arch: arm64\n  defconfig: op8_defconfig\nkernel:\n  version: 4.19\n  anykernel: true\n  anykernel_url: https://github.com/example/AK3.git\n  anykernel_in_tree: true\nupload:\n  vmlinux: true\n''')"
+        python3 scripts/generate-workflow.py -c /tmp/ak3-options.yml -o /tmp/kernel-build-3.yml
+        python3 -c "
+        import yaml
+        d = yaml.safe_load(open('/tmp/kernel-build-3.yml'))
+        assert 'jobs' in d and 'build' in d['jobs']
+        content = open('/tmp/kernel-build-3.yml').read()
+        assert 'name: Download AnyKernel3' not in content, 'in-tree AK3 must skip clone'
+        assert 'AK3_DIR' in content, 'in-tree AK3 must use AK3_DIR packaging'
+        assert 'out/vmlinux' in content, 'upload.vmlinux must add vmlinux path'
+        assert 'example/AK3.git' not in content, 'in-tree must not clone custom URL'
+        assert 'out/.config' in content, 'Build Summary must read out/.config for features'
+        assert 'nightly.link/ReSukiSU' in content, 'Build Summary must include ReSukiSU manager link'
+        print('AK3 options workflow is valid YAML')
+        "
