@@ -396,10 +396,18 @@ def generate_workflow(config: Dict[str, Any]) -> str:
         ksu_check_step = """    - name: Verify KSU Integration
       run: |
         echo "Checking for KSU integration..."
-        if [ -d "drivers/kernelsu" ]; then
-          echo "KSU found in drivers/kernelsu/"
+        if [ ! -d "drivers/kernelsu" ]; then
+          echo "::error::KSU not integrated: drivers/kernelsu missing."
+          echo "  Run: kernel-builder/scripts/ksu-submodule-setup.sh"
+          exit 1
+        fi
+        echo "KSU found in drivers/kernelsu/"
+        if ! git ls-files --stage --error-unmatch KernelSU >/dev/null 2>&1; then
+          echo "::warning::KernelSU is not a git submodule."
+        elif [ "$(git submodule status KernelSU 2>&1 | cut -c1)" = "-" ]; then
+          echo "::warning::KernelSU submodule not initialized. Commit .gitmodules so checkout uses 'submodules: recursive'."
         else
-          echo "KSU not integrated yet"
+          echo "KernelSU is a registered git submodule (OK)."
         fi
 
 """

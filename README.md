@@ -141,8 +141,25 @@ cd /path/to/kernel-source
 
 ## 3. Integrate ReSukiSU
 
+> **Quan trọng — KernelSU phải là git submodule.** `drivers/kernelsu/Kbuild` chạy
+> `git rev-list --count HEAD` để lấy KSU version và sẽ **báo lỗi build** nếu phát
+> hiện code bị copy/inline (thiếu `.git`). Id nhất dùng helper sau (thêm submodule
+> thật + tạo symlink `drivers/kernelsu`):
+
 ```bash
-# Add ReSukiSU
+./kernel-builder/scripts/ksu-submodule-setup.sh          # add submodule + symlink
+# ./kernel-builder/scripts/ksu-submodule-setup.sh --cleanup  # gỡ
+
+git add .gitmodules KernelSU drivers/kernelsu
+git commit -m "Integrate ReSukiSU as submodule"
+git push
+```
+
+> Workflow sinh ra tự **`submodules: recursive`** khi checkout, và bước *Verify KSU
+> Integration* sẽ cảnh báo nếu thiếu submodule (để fail nhanh thay vì lỗi build).
+
+```bash
+# (Cách khác) Add ReSukiSU theo setup.sh upstream
 curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
 
 # Apply Susfs patches (ví dụ kernel 4.19)

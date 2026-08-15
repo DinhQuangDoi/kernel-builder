@@ -80,6 +80,8 @@ kernel-builder/
 - KHÔNG sửa `.gitignore` để bypass; dùng `-f` (mẫu nhánh cũ dùng force add).
 
 ### 4. Đăng ký submodule KernelSU trong `.gitmodules`
+- **Dùng helper tự động (khuyến nghị):** `kernel-builder/scripts/ksu-submodule-setup.sh` — thêm submodule ReSukiSU + tạo symlink `drivers/kernelsu`.
+- `drivers/kernelsu/Kbuild` chạy `git rev-list --count HEAD` → NẾU copy/inline KernelSU (thiếu `.git`) thì build **báo lỗi**: `You should use ReSukiSU as a git submodule`. Không được copy code trực tiếp.
 - Thiếu `.gitmodules` thì GitHub Actions (`submodules: recursive`) không fetch được ReSukiSU.
 - Nội dung:
   ```
