@@ -59,7 +59,7 @@ check_tools_exist() {
 }
 
 check_incompatible_hooks() {
-    echo -e "${BOLD}Checking for INCOMPATIBLE hooks (old style):${NC}"
+    echo -e "${BOLD}Checking for INCOMPATIBLE hooks (legacy COMPAT residue):${NC}"
     echo ""
     
     local incompatible_found=0
@@ -96,13 +96,16 @@ check_incompatible_hooks() {
 }
 
 check_required_hooks() {
-    echo -e "${BOLD}Checking for REQUIRED hooks (new style):${NC}"
+    # Công cụ này xác minh SUSFS INLINE integration: ksu_handle_* inline hooks
+    # trong host files (= LEGACY tier). Với SUSFS inline, các hook inline là bắt
+    # buộc. Chỉ khi integration dạng CURRENT (dispatcher+LSM) mới không cần.
+    echo -e "${BOLD}Checking for REQUIRED inline hooks (SUSFS inline / LEGACY tier):${NC}"
     echo ""
     
     local hooks_found=0
     local hooks_missing=0
     
-    # Required hooks (new style) from inline_hook_check.mk
+    # Required hooks (inline, LEGACY tier) from inline_hook_check.mk
     local required_hooks=(
         "ksu_handle_setresuid:kernel/sys.c"
         "ksu_handle_execveat:fs/exec.c"

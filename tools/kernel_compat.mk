@@ -1,3 +1,15 @@
+# Shallow-clone auto-detect: báo về cho caller biết có cần unshallow hay không.
+# Chỉ dùng khi có .git (build trong kernel source tree thuộc git repo).
+IS_SHALLOW := 0
+ifneq ($(shell git -C $(srctree) rev-parse --is-shallow-repository 2>/dev/null),true)
+IS_SHALLOW := 0
+else
+IS_SHALLOW := 1
+endif
+ifeq ($(IS_SHALLOW),1)
+$(info -- $(REPO_NAME)/compat: [SHALLOW] shallow clone detected! Run 'git fetch --unshallow' for full history-aware checks.)
+endif
+
 # SELinux drivers check
 ifeq ($(shell grep -q "current_sid(void)" $(srctree)/security/selinux/include/objsec.h; echo $$?),0)
 $(info -- $(REPO_NAME)/compat: current_sid found)
