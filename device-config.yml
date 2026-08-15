@@ -1,7 +1,7 @@
 device:
   codename: "op8"
   arch: "arm64"
-  defconfig: "op8_defconfig"
+  defconfig: "vendor/kona_defconfig"
 
 toolchain:
   type: "clang"
